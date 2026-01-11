@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/nikola/code/ConcurrencyCpp/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
