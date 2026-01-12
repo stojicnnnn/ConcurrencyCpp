@@ -1,0 +1,2 @@
+/usr/bin/ar qc libassignment1.a CMakeFiles/assignment1.dir/organ_transplant.cpp.o
+/usr/bin/ranlib libassignment1.a
