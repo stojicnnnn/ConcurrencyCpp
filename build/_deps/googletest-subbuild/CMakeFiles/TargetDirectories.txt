@@ -1,3 +1,0 @@
-/home/nikola/code/ConcurrencyCpp/build/_deps/googletest-subbuild/CMakeFiles/googletest-populate.dir
-/home/nikola/code/ConcurrencyCpp/build/_deps/googletest-subbuild/CMakeFiles/edit_cache.dir
-/home/nikola/code/ConcurrencyCpp/build/_deps/googletest-subbuild/CMakeFiles/rebuild_cache.dir

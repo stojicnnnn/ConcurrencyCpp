@@ -1,1 +1,0 @@
-/usr/bin/c++  -fsanitize=thread -g -O1  -fsanitize=thread -Wl,--dependency-file=CMakeFiles/assignment1_test.dir/link.d CMakeFiles/assignment1_test.dir/organ_transplant_test.cpp.o -o assignment1_test  libassignment1.a ../lib/libgtest_main.a -lpthread ../lib/libgtest.a
