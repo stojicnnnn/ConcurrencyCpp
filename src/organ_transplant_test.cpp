@@ -12,8 +12,8 @@ TEST(OrganTransplantTest, AddPatient_SinglePatient) {
     list.addPatient("John Smith");
     
     auto waiting = list.getWaitingPatients();
-    ASSERT_EQ(waiting.size(), 1);
-    ASSERT_EQ(waiting[0], "John Smith");
+    EXPECT_EQ(waiting.size(), 1);
+    EXPECT_EQ(waiting[0], "John Smith");
 }
 
 TEST(OrganTransplantTest, TreatPatient_MovesFromWaitingToTreated) {
@@ -21,9 +21,11 @@ TEST(OrganTransplantTest, TreatPatient_MovesFromWaitingToTreated) {
     list.addPatient("Jane Doe");
     
     list.treatPatient("Jane Doe", Date(2025, 1, 15));
-    
-    ASSERT_EQ(list.getWaitingPatients().size(), 0);
-    ASSERT_EQ(list.getTreatedPatients().size(), 1);
+    auto treated = list.getTreatedPatients();
+    EXPECT_EQ(treated.size(), 1);
+    EXPECT_EQ(treated[0], "Jane Doe");
+    EXPECT_EQ(list.getWaitingPatients().size(), 0);
+    EXPECT_EQ(list.getTreatedPatients().size(), 1);
 }
 
 TEST(OrganTransplantTest, DeleteOldRecords_RemovesOldPatients) {
@@ -35,11 +37,11 @@ TEST(OrganTransplantTest, DeleteOldRecords_RemovesOldPatients) {
     list.addPatient("New Patient");
     list.treatPatient("New Patient", Date(2025, 1, 15));
     
-    ASSERT_EQ(list.getTreatedPatients().size(), 2);
+    EXPECT_EQ(list.getTreatedPatients().size(), 2);
     
     list.deleteOldRecords(Date(2021, 1, 1));
     
-    ASSERT_EQ(list.getTreatedPatients().size(), 1);
+    EXPECT_EQ(list.getTreatedPatients().size(), 1);
 }
 
 TEST(OrganTransplantTest, GetPatientStatus_ReturnsCorrectStatus) {
@@ -48,11 +50,20 @@ TEST(OrganTransplantTest, GetPatientStatus_ReturnsCorrectStatus) {
     list.addPatient("Waiting Patient");
     list.addPatient("Will Be Treated");
     list.treatPatient("Will Be Treated", Date(2025, 1, 15));
-    
-    ASSERT_EQ(list.getPatientStatus("Waiting Patient"), 1);
-    ASSERT_EQ(list.getPatientStatus("Will Be Treated"), 2);
-    ASSERT_EQ(list.getPatientStatus("Non Existent"), 0);
+
+    auto waitingStatus = list.getPatientStatus("Waiting Patient");
+    ASSERT_TRUE(waitingStatus.has_value());
+    EXPECT_EQ(*waitingStatus, PatientStatus::Waiting);
+
+    auto treatedStatus = list.getPatientStatus("Will Be Treated");
+    ASSERT_TRUE(treatedStatus.has_value());
+    EXPECT_EQ(*treatedStatus, PatientStatus::Treated);
+
+    auto missingStatus = list.getPatientStatus("Non Existent");
+    ASSERT_FALSE(missingStatus.has_value());
+    EXPECT_EQ(missingStatus.error(), PatientError::NotFound);
 }
+
 
 // Thread safety tests
 TEST(OrganTransplantTest, ConcurrentAdd_MultipleThreads) {
@@ -75,7 +86,7 @@ TEST(OrganTransplantTest, ConcurrentAdd_MultipleThreads) {
         t.join();
     }
     
-    ASSERT_EQ(list.getWaitingPatients().size(), NUM_THREADS * ADDS_PER_THREAD);
+    EXPECT_EQ(list.getWaitingPatients().size(), NUM_THREADS * ADDS_PER_THREAD);
 }
 
 TEST(OrganTransplantTest, ConcurrentAddAndDelete_NoDataRace) {
@@ -97,7 +108,7 @@ TEST(OrganTransplantTest, ConcurrentAddAndDelete_NoDataRace) {
     deleteThread.join();
     
     // If we reach here without crash, thread safety works
-    ASSERT_EQ(list.getWaitingPatients().size(), 100);
+    EXPECT_EQ(list.getWaitingPatients().size(), 100);
 }
 
 TEST(OrganTransplantTest, ConcurrentReadWrite_NoDataRace) {
@@ -124,5 +135,5 @@ TEST(OrganTransplantTest, ConcurrentReadWrite_NoDataRace) {
     writeThread.join();
     readThread.join();
     
-    ASSERT_EQ(list.getWaitingPatients().size(), 100);
+    EXPECT_EQ(list.getWaitingPatients().size(), 100);
 }

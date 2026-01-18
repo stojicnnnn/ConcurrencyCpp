@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <mutex>
+#include <expected>
 
 namespace ass1 {
 
@@ -15,9 +16,20 @@ struct Date {
     bool operator<(const Date& other) const;
 };
 
+enum class PatientStatus {
+    Waiting,
+    Treated
+};
+
+enum class PatientError {
+    NotFound
+};
+
+
+
 struct WaitingPatient {
     std::string fullName;
-    WaitingPatient(const std::string& name);
+    WaitingPatient(std::string name);
 };
 
 struct TreatedPatient {
@@ -28,13 +40,14 @@ struct TreatedPatient {
 
 class OrganTransplantWaitingList {
 private:
-    std::vector<WaitingPatient> waitingList;
-    std::vector<TreatedPatient> treatedList;
     mutable std::mutex mtx; // not sure if mutable is needed here
 
 public:
     OrganTransplantWaitingList() = default;
     
+    std::vector<WaitingPatient> waitingList;
+    std::vector<TreatedPatient> treatedList;
+
     // Delete copy operations
     OrganTransplantWaitingList(const OrganTransplantWaitingList&) = delete;
     OrganTransplantWaitingList& operator=(const OrganTransplantWaitingList&) = delete;
@@ -44,7 +57,7 @@ public:
     void deleteOldRecords(const Date& beforeDate);
     std::vector<std::string> getWaitingPatients() const;
     std::vector<std::string> getTreatedPatients() const;
-    int getPatientStatus(const std::string& name) const;
+    std::expected<PatientStatus, PatientError> getPatientStatus(const std::string& name) const;
 };
 
 }
