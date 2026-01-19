@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <expected>
+#include <shared_mutex>
 
 namespace ass1 {
 
@@ -40,7 +41,7 @@ struct TreatedPatient {
 
 class OrganTransplantWaitingList {
 private:
-    mutable std::mutex mtx; // not sure if mutable is needed here
+    mutable std::shared_mutex mtx; // not sure if mutable is needed here
 
 public:
     OrganTransplantWaitingList() = default;

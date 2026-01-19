@@ -146,12 +146,12 @@ TEST(OrganTransplantTest, MoveConstructor_TransfersData) {
     
     OrganTransplantWaitingList list2(std::move(list1));
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
+    EXPECT_EQ(list2.getWaitingPatients().size(), 3);
     
     auto patients = list2.getWaitingPatients();
-    ASSERT_EQ(patients[0], "Alice Anderson");
-    ASSERT_EQ(patients[1], "Bob Brown");
-    ASSERT_EQ(patients[2], "Charlie Clark");
+    EXPECT_EQ(patients[0], "Alice Anderson");
+    EXPECT_EQ(patients[1], "Bob Brown");
+    EXPECT_EQ(patients[2], "Charlie Clark");
 }
 
 TEST(OrganTransplantTest, MoveConstructor_WithTreatedPatients) {
@@ -162,8 +162,8 @@ TEST(OrganTransplantTest, MoveConstructor_WithTreatedPatients) {
     
     OrganTransplantWaitingList list2(std::move(list1));
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
-    ASSERT_EQ(list2.getTreatedPatients().size(), 1);
+    EXPECT_EQ(list2.getWaitingPatients().size(), 1);
+    EXPECT_EQ(list2.getTreatedPatients().size(), 1);
 }
 
 TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
@@ -175,16 +175,16 @@ TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
     OrganTransplantWaitingList list2;
     list2.addPatient("Old Patient");
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
+    EXPECT_EQ(list2.getWaitingPatients().size(), 1);
     
     list2 = std::move(list1);
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
+    EXPECT_EQ(list2.getWaitingPatients().size(), 3);
     
     auto patients = list2.getWaitingPatients();
-    ASSERT_EQ(patients[0], "Charlie");
-    ASSERT_EQ(patients[1], "David");
-    ASSERT_EQ(patients[2], "Eve");
+    EXPECT_EQ(patients[0], "Charlie");
+    EXPECT_EQ(patients[1], "David");
+    EXPECT_EQ(patients[2], "Eve");
 }
 
 TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
@@ -194,5 +194,128 @@ TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
     // Self-assignment should do nothing
     list = std::move(list);
     
-    ASSERT_EQ(list.getWaitingPatients().size(), 1);
+    EXPECT_EQ(list.getWaitingPatients().size(), 1);
+}
+
+//bonus 2 tests
+
+TEST(OrganTransplantTest, Bonus2_ConcurrentReads_MultipleThreads) {
+    OrganTransplantWaitingList list;
+    
+    for (int i = 0; i < 100; i++) {
+        list.addPatient("Patient-" + std::to_string(i));
+    }
+    
+    const int NUM_READER_THREADS = 20;
+    std::vector<std::thread> readers;
+    
+    for (int i = 0; i < NUM_READER_THREADS; i++) {
+        readers.emplace_back([&list]() {
+            for (int j = 0; j < 50; j++) {
+                auto patients = list.getWaitingPatients();
+                EXPECT_EQ(patients.size(), 100);
+            }
+        });
+    }
+    
+    for (auto& t : readers) {
+        t.join();
+    }
+    
+    EXPECT_EQ(list.getWaitingPatients().size(), 100);
+}
+
+TEST(OrganTransplantTest, Bonus2_ConcurrentReadAndWrite_NoDataRace) {
+    OrganTransplantWaitingList list;
+    
+    for (int i = 0; i < 50; i++) {
+        list.addPatient("Initial-" + std::to_string(i));
+    }
+    
+    std::thread writer([&list]() {
+        for (int i = 0; i < 100; i++) {
+            list.addPatient("New-" + std::to_string(i));
+        }
+    });
+    
+    std::vector<std::thread> readers;
+    for (int i = 0; i < 10; i++) {
+        readers.emplace_back([&list]() {
+            for (int j = 0; j < 100; j++) {
+                auto patients = list.getWaitingPatients();
+                // Size will vary between 50 and 150 as writer adds
+                ASSERT_GE(patients.size(), 50);
+                ASSERT_LE(patients.size(), 150);
+            }
+        });
+    }
+    
+    writer.join();
+    for (auto& t : readers) {
+        t.join();
+    }
+    
+    EXPECT_EQ(list.getWaitingPatients().size(), 150);
+}
+
+TEST(OrganTransplantTest, Bonus2_TrueConcurrency_AddAndDelete) {
+    OrganTransplantWaitingList list;
+    
+    std::thread addThread([&list]() {
+        for (int i = 0; i < 200; i++) {
+            list.addPatient("Patient-" + std::to_string(i));
+        }
+    });
+    
+    std::thread deleteThread([&list]() {
+        for (int i = 0; i < 100; i++) {
+            list.deleteOldRecords(Date(2020, 1, 1));
+        }
+    });
+    
+    std::thread reader1([&list]() {
+        for (int i = 0; i < 150; i++) {
+            list.getWaitingPatients();
+        }
+    });
+    
+    std::thread reader2([&list]() {
+        for (int i = 0; i < 150; i++) {
+            list.getTreatedPatients();
+        }
+    });
+    
+    addThread.join();
+    deleteThread.join();
+    reader1.join();
+    reader2.join();
+    
+    EXPECT_EQ(list.getWaitingPatients().size(), 200);
+}
+
+TEST(OrganTransplantTest, Bonus2_StressTest_ManyThreads) {
+    OrganTransplantWaitingList list;
+    
+    const int NUM_THREADS = 20;
+    const int OPS_PER_THREAD = 100;
+    std::vector<std::thread> threads;
+    
+    for (int t = 0; t < NUM_THREADS; t++) {
+        threads.emplace_back([&list, t]() {
+            for (int i = 0; i < OPS_PER_THREAD; i++) {
+                if (t % 3 == 0) {
+                    list.addPatient("Thread" + std::to_string(t) + "-Patient" + std::to_string(i));
+                } else {
+                    list.getWaitingPatients();
+                }
+            }
+        });
+    }
+    
+    for (auto& t : threads) {
+        t.join();
+    }
+    
+    auto finalSize = list.getWaitingPatients().size();
+    EXPECT_EQ(finalSize, 700);
 }
