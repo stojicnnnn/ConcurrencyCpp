@@ -137,3 +137,62 @@ TEST(OrganTransplantTest, ConcurrentReadWrite_NoDataRace) {
     
     EXPECT_EQ(list.getWaitingPatients().size(), 100);
 }
+
+TEST(OrganTransplantTest, MoveConstructor_TransfersData) {
+    OrganTransplantWaitingList list1;
+    list1.addPatient("Alice Anderson");
+    list1.addPatient("Bob Brown");
+    list1.addPatient("Charlie Clark");
+    
+    OrganTransplantWaitingList list2(std::move(list1));
+    
+    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
+    
+    auto patients = list2.getWaitingPatients();
+    ASSERT_EQ(patients[0], "Alice Anderson");
+    ASSERT_EQ(patients[1], "Bob Brown");
+    ASSERT_EQ(patients[2], "Charlie Clark");
+}
+
+TEST(OrganTransplantTest, MoveConstructor_WithTreatedPatients) {
+    OrganTransplantWaitingList list1;
+    list1.addPatient("Patient 1");
+    list1.addPatient("Patient 2");
+    list1.treatPatient("Patient 1", Date(2025, 1, 15));
+    
+    OrganTransplantWaitingList list2(std::move(list1));
+    
+    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
+    ASSERT_EQ(list2.getTreatedPatients().size(), 1);
+}
+
+TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
+    OrganTransplantWaitingList list1;
+    list1.addPatient("Charlie");
+    list1.addPatient("David");
+    list1.addPatient("Eve");
+    
+    OrganTransplantWaitingList list2;
+    list2.addPatient("Old Patient");
+    
+    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
+    
+    list2 = std::move(list1);
+    
+    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
+    
+    auto patients = list2.getWaitingPatients();
+    ASSERT_EQ(patients[0], "Charlie");
+    ASSERT_EQ(patients[1], "David");
+    ASSERT_EQ(patients[2], "Eve");
+}
+
+TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
+    OrganTransplantWaitingList list;
+    list.addPatient("Test Patient");
+    
+    // Self-assignment should do nothing
+    list = std::move(list);
+    
+    ASSERT_EQ(list.getWaitingPatients().size(), 1);
+}
