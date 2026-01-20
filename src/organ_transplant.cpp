@@ -18,12 +18,12 @@ TreatedPatient::TreatedPatient(const std::string& name, const Date& date)
     : fullName(name), treatmentDate(date) {}
 
 void OrganTransplantWaitingList::addPatient(const std::string& name) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::unique_lock<std::shared_mutex> lock(mtx);
     waitingList.emplace_back(name);
 }
 
 void OrganTransplantWaitingList::treatPatient(const std::string& name, const Date& treatmentDate) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::unique_lock<std::shared_mutex> lock(mtx);
     
     auto it = std::find_if(waitingList.begin(), waitingList.end(),
         [&name](const WaitingPatient& p) { return p.fullName == name; });
@@ -35,7 +35,7 @@ void OrganTransplantWaitingList::treatPatient(const std::string& name, const Dat
 }
 //note to self, since c++ 20 we can use std::erase_if
 void OrganTransplantWaitingList::deleteOldRecords(const Date& beforeDate) {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::unique_lock<std::shared_mutex> lock(mtx);
     
     treatedList.erase(
         std::remove_if(treatedList.begin(), treatedList.end(),
@@ -47,7 +47,7 @@ void OrganTransplantWaitingList::deleteOldRecords(const Date& beforeDate) {
 }
 
 std::vector<std::string> OrganTransplantWaitingList::getWaitingPatients() const {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_lock<std::shared_mutex> lock(mtx);
     
     std::vector<std::string> names;
     for (const auto& patient : waitingList) {
@@ -57,7 +57,7 @@ std::vector<std::string> OrganTransplantWaitingList::getWaitingPatients() const 
 }
 
 std::vector<std::string> OrganTransplantWaitingList::getTreatedPatients() const {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::shared_lock<std::shared_mutex> lock(mtx);
     
     std::vector<std::string> names;
     for (const auto& patient : treatedList) {
@@ -67,8 +67,8 @@ std::vector<std::string> OrganTransplantWaitingList::getTreatedPatients() const 
 }
 
 std::expected<PatientStatus, PatientError>OrganTransplantWaitingList::getPatientStatus(const std::string& name) const {
-    std::lock_guard<std::mutex> lock(mtx);
-
+    std::shared_lock<std::shared_mutex> lock(mtx);
+    
     auto waitIt = std::find_if(
         waitingList.begin(), waitingList.end(),
         [&name](const WaitingPatient& p) { return p.fullName == name; }
@@ -88,5 +88,18 @@ std::expected<PatientStatus, PatientError>OrganTransplantWaitingList::getPatient
     return std::unexpected(PatientError::NotFound);
 }
 
+OrganTransplantWaitingList::OrganTransplantWaitingList(OrganTransplantWaitingList&& other) noexcept {
+    std::unique_lock<std::shared_mutex> lock(other.mtx);
+    waitingList = std::move(other.waitingList);
+    treatedList = std::move(other.treatedList);
+}
 
+OrganTransplantWaitingList& OrganTransplantWaitingList::operator=(OrganTransplantWaitingList&& other) noexcept {
+    if (this != &other) {
+        std::scoped_lock lock(mtx, other.mtx);
+        waitingList = std::move(other.waitingList);
+        treatedList = std::move(other.treatedList);
+    }
+    return *this;
+}
 }

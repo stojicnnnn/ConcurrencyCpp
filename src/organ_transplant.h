@@ -4,6 +4,7 @@
 #include <vector>
 #include <mutex>
 #include <expected>
+#include <shared_mutex>
 
 namespace ass1 {
 
@@ -40,18 +41,20 @@ struct TreatedPatient {
 
 class OrganTransplantWaitingList {
 private:
-    mutable std::mutex mtx; // not sure if mutable is needed here
+    mutable std::shared_mutex mtx; // not sure if mutable is needed here
 
 public:
     OrganTransplantWaitingList() = default;
-    
+
     std::vector<WaitingPatient> waitingList;
     std::vector<TreatedPatient> treatedList;
 
-    // Delete copy operations
     OrganTransplantWaitingList(const OrganTransplantWaitingList&) = delete;
     OrganTransplantWaitingList& operator=(const OrganTransplantWaitingList&) = delete;
     
+    OrganTransplantWaitingList(OrganTransplantWaitingList&& other) noexcept;
+    OrganTransplantWaitingList& operator=(OrganTransplantWaitingList&& other) noexcept;
+
     void addPatient(const std::string& name);
     void treatPatient(const std::string& name, const Date& treatmentDate);
     void deleteOldRecords(const Date& beforeDate);
