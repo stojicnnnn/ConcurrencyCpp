@@ -206,4 +206,5 @@ TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
     list = std::move(list);
     
     ASSERT_EQ(list.getWaitingPatients().size(), 1);
+    EXPECT_EQ(waiting[0], "Test Patient");
 }
