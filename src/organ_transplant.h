@@ -41,7 +41,8 @@ struct TreatedPatient {
 
 class OrganTransplantWaitingList {
 private:
-    mutable std::shared_mutex mtx; // not sure if mutable is needed here
+    mutable std::shared_mutex waitingListMtx;
+    mutable std::shared_mutex treatedListMtx;
 
 public:
     OrganTransplantWaitingList() = default;
