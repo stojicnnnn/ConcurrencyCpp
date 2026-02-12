@@ -158,12 +158,20 @@ TEST(OrganTransplantTest, MoveConstructor_WithTreatedPatients) {
     OrganTransplantWaitingList list1;
     list1.addPatient("Patient 1");
     list1.addPatient("Patient 2");
+    list1.addPatient("Patient 3");
     list1.treatPatient("Patient 1", Date(2025, 1, 15));
+    list1.treatPatient("Patient 3", Date(2025, 2, 20));
     
     OrganTransplantWaitingList list2(std::move(list1));
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
-    ASSERT_EQ(list2.getTreatedPatients().size(), 1);
+    auto waiting = list2.getWaitingPatients();
+    ASSERT_EQ(waiting.size(), 1);
+    EXPECT_EQ(waiting[0], "Patient 2");
+
+    auto treated = list2.getTreatedPatients();
+    ASSERT_EQ(treated.size(), 2);
+    EXPECT_EQ(treated[0], "Patient 1");
+    EXPECT_EQ(treated[1], "Patient 3");
 }
 
 TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
@@ -171,6 +179,7 @@ TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
     list1.addPatient("Charlie");
     list1.addPatient("David");
     list1.addPatient("Eve");
+    list1.treatPatient("Charlie", Date(2025, 3, 1));
     
     OrganTransplantWaitingList list2;
     list2.addPatient("Old Patient");
@@ -179,12 +188,14 @@ TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
     
     list2 = std::move(list1);
     
-    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
-    
-    auto patients = list2.getWaitingPatients();
-    ASSERT_EQ(patients[0], "Charlie");
-    ASSERT_EQ(patients[1], "David");
-    ASSERT_EQ(patients[2], "Eve");
+    auto waiting = list2.getWaitingPatients();
+    ASSERT_EQ(waiting.size(), 2);
+    EXPECT_EQ(waiting[0], "David");
+    EXPECT_EQ(waiting[1], "Eve");
+
+    auto treated = list2.getTreatedPatients();
+    ASSERT_EQ(treated.size(), 1);
+    EXPECT_EQ(treated[0], "Charlie");
 }
 
 TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
