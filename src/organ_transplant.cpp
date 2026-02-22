@@ -67,8 +67,9 @@ std::vector<std::string> OrganTransplantWaitingList::getTreatedPatients() const 
 }
 
 std::expected<PatientStatus, PatientError>OrganTransplantWaitingList::getPatientStatus(const std::string& name) const {
-    std::shared_lock<std::shared_mutex> lockWaiting(waitingListMtx);
-    std::shared_lock<std::shared_mutex> lockTreated(treatedListMtx);
+    std::shared_lock<std::shared_mutex> lockWaiting(waitingListMtx, std::defer_lock);
+    std::shared_lock<std::shared_mutex> lockTreated(treatedListMtx, std::defer_lock);
+    std::lock(lockWaiting, lockTreated);
     
     auto waitIt = std::find_if(
         waitingList.begin(), waitingList.end(),

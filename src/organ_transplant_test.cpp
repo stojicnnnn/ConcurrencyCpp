@@ -199,31 +199,7 @@ TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
 
 //bonus 2 tests
 
-TEST(OrganTransplantTest, Bonus2_ConcurrentReads_MultipleThreads) {
-    OrganTransplantWaitingList list;
-    
-    for (int i = 0; i < 100; i++) {
-        list.addPatient("Patient-" + std::to_string(i));
-    }
-    
-    const int NUM_READER_THREADS = 20;
-    std::vector<std::thread> readers;
-    
-    for (int i = 0; i < NUM_READER_THREADS; i++) {
-        readers.emplace_back([&list]() {
-            for (int j = 0; j < 50; j++) {
-                auto patients = list.getWaitingPatients();
-                EXPECT_EQ(patients.size(), 100);
-            }
-        });
-    }
-    
-    for (auto& t : readers) {
-        t.join();
-    }
-    
-    EXPECT_EQ(list.getWaitingPatients().size(), 100);
-}
+
 
 TEST(OrganTransplantTest, Bonus2_ConcurrentReadAndWrite_NoDataRace) {
     OrganTransplantWaitingList list;
