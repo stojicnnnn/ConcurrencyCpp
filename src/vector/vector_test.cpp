@@ -1,73 +1,69 @@
 #include <gtest/gtest.h>
 #include "vector_implementation.hpp"
 #include <vector>
+#include <string>
 
-// -------- VectorIntTest_Constructors --------
 
-TEST(VectorIntTest_Constructors, DefaultConstructor) {
-    VectorInt v;
+TEST(VectorStringTest_Constructors, DefaultConstructor) {
+    VectorString v;
     EXPECT_TRUE(v.empty());
     EXPECT_EQ(v.size(), 0);
     EXPECT_EQ(v.capacity(), 0);
 }
 
-TEST(VectorIntTest_Constructors, SizeConstructor) {
-    VectorInt v(5);
+TEST(VectorStringTest_Constructors, SizeConstructor) {
+    VectorString v(5);
     EXPECT_FALSE(v.empty());
     EXPECT_EQ(v.size(), 5);
     EXPECT_EQ(v.capacity(), 5);
     for (size_t i = 0; i < v.size(); ++i) {
-        EXPECT_EQ(v[i], 0);
+        EXPECT_EQ(v[i], "");
     }
 }
 
-TEST(VectorIntTest_Constructors, SizeAndValueConstructor) {
-    VectorInt v(5, 42);
+TEST(VectorStringTest_Constructors, SizeAndValueConstructor) {
+    VectorString v(5, "hello");
     EXPECT_EQ(v.size(), 5);
     for (size_t i = 0; i < v.size(); ++i) {
-        EXPECT_EQ(v[i], 42);
+        EXPECT_EQ(v[i], "hello");
     }
 }
 
-TEST(VectorIntTest_Constructors, InitializerListConstructor) {
-    VectorInt v = {1, 2, 3, 4, 5};
+TEST(VectorStringTest_Constructors, InitializerListConstructor) {
+    VectorString v = {"a", "b", "c", "d", "e"};
     EXPECT_EQ(v.size(), 5);
-    EXPECT_EQ(v[0], 1);
-    EXPECT_EQ(v[4], 5);
+    EXPECT_EQ(v[0], "a");
+    EXPECT_EQ(v[4], "e");
 }
 
-// -------- VectorIntTest_CopyAndMove --------
 
-TEST(VectorIntTest_CopyAndMove, CopyConstructor) {
-    VectorInt v1 = {1, 2, 3};
-    VectorInt v2(v1);
+TEST(VectorStringTest_CopyAndMove, CopyConstructor) {
+    VectorString v1 = {"a", "b", "c"};
+    VectorString v2(v1);
     EXPECT_EQ(v2.size(), 3);
     EXPECT_EQ(v1, v2);
-    // Modifying v2 should not affect v1
-    v2[0] = 10;
+    v2[0] = "x";
     EXPECT_NE(v1[0], v2[0]);
 }
 
-TEST(VectorIntTest_CopyAndMove, CopyAssignment) {
-    VectorInt v1 = {1, 2, 3};
-    VectorInt v2;
+TEST(VectorStringTest_CopyAndMove, CopyAssignment) {
+    VectorString v1 = {"a", "b", "c"};
+    VectorString v2;
     v2 = v1;
     EXPECT_EQ(v2.size(), 3);
     EXPECT_EQ(v1, v2);
-    // Modifying v2 should not affect v1
-    v2[0] = 10;
+    v2[0] = "x";
     EXPECT_NE(v1[0], v2[0]);
     
-    // Self-assignment
     v2 = v2;
-    EXPECT_EQ(v2[0], 10);
+    EXPECT_EQ(v2[0], "x");
     EXPECT_EQ(v2.size(), 3);
 }
 
-TEST(VectorIntTest_CopyAndMove, MoveConstructor) {
-    VectorInt v1 = {1, 2, 3};
-    const int* data_ptr = v1.data();
-    VectorInt v2(std::move(v1));
+TEST(VectorStringTest_CopyAndMove, MoveConstructor) {
+    VectorString v1 = {"a", "b", "c"};
+    const std::string* data_ptr = v1.data();
+    VectorString v2(std::move(v1));
     EXPECT_EQ(v2.size(), 3);
     EXPECT_EQ(v2.data(), data_ptr);
     EXPECT_EQ(v1.data(), nullptr);
@@ -75,10 +71,10 @@ TEST(VectorIntTest_CopyAndMove, MoveConstructor) {
     EXPECT_EQ(v1.capacity(), 0);
 }
 
-TEST(VectorIntTest_CopyAndMove, MoveAssignment) {
-    VectorInt v1 = {1, 2, 3};
-    VectorInt v2 = {4, 5};
-    const int* data_ptr = v1.data();
+TEST(VectorStringTest_CopyAndMove, MoveAssignment) {
+    VectorString v1 = {"a", "b", "c"};
+    VectorString v2 = {"x", "y"};
+    const std::string* data_ptr = v1.data();
     v2 = std::move(v1);
     EXPECT_EQ(v2.size(), 3);
     EXPECT_EQ(v2.data(), data_ptr);
@@ -92,62 +88,60 @@ TEST(VectorIntTest_CopyAndMove, MoveAssignment) {
     EXPECT_NE(v2.data(), nullptr);
 }
 
-// -------- VectorIntTest_ElementAccess --------
 
-TEST(VectorIntTest_ElementAccess, At) {
-    VectorInt v = {1, 2, 3};
-    EXPECT_EQ(v.at(1), 2);
-    v.at(1) = 10;
-    EXPECT_EQ(v.at(1), 10);
+TEST(VectorStringTest_ElementAccess, At) {
+    VectorString v = {"a", "b", "c"};
+    EXPECT_EQ(v.at(1), "b");
+    v.at(1) = "x";
+    EXPECT_EQ(v.at(1), "x");
     EXPECT_THROW(v.at(3), std::out_of_range);
 }
 
-TEST(VectorIntTest_ElementAccess, OperatorBracket) {
-    VectorInt v = {1, 2, 3};
-    EXPECT_EQ(v[1], 2);
-    v[1] = 10;
-    EXPECT_EQ(v[1], 10);
+TEST(VectorStringTest_ElementAccess, OperatorBracket) {
+    VectorString v = {"a", "b", "c"};
+    EXPECT_EQ(v[1], "b");
+    v[1] = "x";
+    EXPECT_EQ(v[1], "x");
 }
 
-TEST(VectorIntTest_ElementAccess, FrontAndBack) {
-    VectorInt v = {10, 20, 30};
-    EXPECT_EQ(v.front(), 10);
-    EXPECT_EQ(v.back(), 30);
-    v.front() = 100;
-    v.back() = 300;
-    EXPECT_EQ(v[0], 100);
-    EXPECT_EQ(v[2], 300);
+TEST(VectorStringTest_ElementAccess, FrontAndBack) {
+    VectorString v = {"a", "b", "c"};
+    EXPECT_EQ(v.front(), "a");
+    EXPECT_EQ(v.back(), "c");
+    v.front() = "x";
+    v.back() = "z";
+    EXPECT_EQ(v[0], "x");
+    EXPECT_EQ(v[2], "z");
 }
 
-TEST(VectorIntTest_ElementAccess, Data) {
-    VectorInt v = {1, 2, 3};
-    int* ptr = v.data();
+TEST(VectorStringTest_ElementAccess, Data) {
+    VectorString v = {"a", "b", "c"};
+    std::string* ptr = v.data();
     EXPECT_NE(ptr, nullptr);
-    EXPECT_EQ(*ptr, 1);
-    *ptr = 10;
-    EXPECT_EQ(v[0], 10);
+    EXPECT_EQ(*ptr, "a");
+    *ptr = "x";
+    EXPECT_EQ(v[0], "x");
 }
 
-// -------- VectorIntTest_Modifiers --------
 
-TEST(VectorIntTest_Modifiers, PushBack) {
-    VectorInt v;
-    v.push_back(1);
+TEST(VectorStringTest_Modifiers, PushBack) {
+    VectorString v;
+    v.push_back("a");
     EXPECT_EQ(v.size(), 1);
-    EXPECT_EQ(v[0], 1);
+    EXPECT_EQ(v[0], "a");
     
-    v.push_back(2);
-    v.push_back(3);
+    v.push_back("b");
+    v.push_back("c");
     EXPECT_EQ(v.size(), 3);
-    EXPECT_EQ(v[2], 3);
+    EXPECT_EQ(v[2], "c");
     EXPECT_GE(v.capacity(), 3);
 }
 
-TEST(VectorIntTest_Modifiers, PopBack) {
-    VectorInt v = {1, 2, 3};
+TEST(VectorStringTest_Modifiers, PopBack) {
+    VectorString v = {"a", "b", "c"};
     v.pop_back();
     EXPECT_EQ(v.size(), 2);
-    EXPECT_EQ(v.back(), 2);
+    EXPECT_EQ(v.back(), "b");
     
     v.pop_back();
     v.pop_back();
@@ -157,61 +151,61 @@ TEST(VectorIntTest_Modifiers, PopBack) {
     EXPECT_TRUE(v.empty());
 }
 
-TEST(VectorIntTest_Modifiers, Insert) {
-    VectorInt v = {1, 3};
-    v.insert(1, 2);
+TEST(VectorStringTest_Modifiers, Insert) {
+    VectorString v = {"a", "c"};
+    v.insert(1, "b");
     EXPECT_EQ(v.size(), 3);
-    EXPECT_EQ(v[0], 1);
-    EXPECT_EQ(v[1], 2);
-    EXPECT_EQ(v[2], 3);
+    EXPECT_EQ(v[0], "a");
+    EXPECT_EQ(v[1], "b");
+    EXPECT_EQ(v[2], "c");
     
-    v.insert(0, 0);
-    EXPECT_EQ(v[0], 0);
+    v.insert(0, "0");
+    EXPECT_EQ(v[0], "0");
     EXPECT_EQ(v.size(), 4);
     
-    v.insert(4, 4);
-    EXPECT_EQ(v[4], 4);
+    v.insert(4, "d");
+    EXPECT_EQ(v[4], "d");
     EXPECT_EQ(v.size(), 5);
     
-    EXPECT_THROW(v.insert(10, 10), std::out_of_range);
+    EXPECT_THROW(v.insert(10, "x"), std::out_of_range);
 }
 
-TEST(VectorIntTest_Modifiers, Erase) {
-    VectorInt v = {1, 2, 3, 4};
+TEST(VectorStringTest_Modifiers, Erase) {
+    VectorString v = {"a", "b", "c", "d"};
     v.erase(1);
     EXPECT_EQ(v.size(), 3);
-    EXPECT_EQ(v[0], 1);
-    EXPECT_EQ(v[1], 3);
-    EXPECT_EQ(v[2], 4);
+    EXPECT_EQ(v[0], "a");
+    EXPECT_EQ(v[1], "c");
+    EXPECT_EQ(v[2], "d");
     
     EXPECT_THROW(v.erase(10), std::out_of_range);
 }
 
-TEST(VectorIntTest_Modifiers, Resize) {
-    VectorInt v = {1, 2, 3};
-    v.resize(5, 10);
+TEST(VectorStringTest_Modifiers, Resize) {
+    VectorString v = {"a", "b", "c"};
+    v.resize(5, "x");
     EXPECT_EQ(v.size(), 5);
-    EXPECT_EQ(v[3], 10);
-    EXPECT_EQ(v[4], 10);
+    EXPECT_EQ(v[3], "x");
+    EXPECT_EQ(v[4], "x");
     
     v.resize(2);
     EXPECT_EQ(v.size(), 2);
-    EXPECT_EQ(v[0], 1);
-    EXPECT_EQ(v[1], 2);
+    EXPECT_EQ(v[0], "a");
+    EXPECT_EQ(v[1], "b");
 }
 
-TEST(VectorIntTest_Modifiers, Swap) {
-    VectorInt v1 = {1, 2};
-    VectorInt v2 = {3, 4, 5};
+TEST(VectorStringTest_Modifiers, Swap) {
+    VectorString v1 = {"a", "b"};
+    VectorString v2 = {"c", "d", "e"};
     v1.swap(v2);
     EXPECT_EQ(v1.size(), 3);
     EXPECT_EQ(v2.size(), 2);
-    EXPECT_EQ(v1[0], 3);
-    EXPECT_EQ(v2[0], 1);
+    EXPECT_EQ(v1[0], "c");
+    EXPECT_EQ(v2[0], "a");
 }
 
-TEST(VectorIntTest_Modifiers, Clear) {
-    VectorInt v = {1, 2, 3};
+TEST(VectorStringTest_Modifiers, Clear) {
+    VectorString v = {"a", "b", "c"};
     size_t cap = v.capacity();
     v.clear();
     EXPECT_TRUE(v.empty());
@@ -219,21 +213,20 @@ TEST(VectorIntTest_Modifiers, Clear) {
     EXPECT_EQ(v.capacity(), cap);
 }
 
-// -------- VectorIntTest_Capacity --------
 
-TEST(VectorIntTest_Capacity, Reserve) {
-    VectorInt v;
+TEST(VectorStringTest_Capacity, Reserve) {
+    VectorString v;
     v.reserve(10);
     EXPECT_GE(v.capacity(), 10);
     EXPECT_TRUE(v.empty());
     
     size_t cap = v.capacity();
-    v.reserve(5); // Should do nothing since 5 < 10
+    v.reserve(5);
     EXPECT_EQ(v.capacity(), cap);
 }
 
-TEST(VectorIntTest_Capacity, ShrinkToFit) {
-    VectorInt v(100);
+TEST(VectorStringTest_Capacity, ShrinkToFit) {
+    VectorString v(100);
     v.resize(10);
     v.shrink_to_fit();
     EXPECT_EQ(v.capacity(), 10);
@@ -245,13 +238,12 @@ TEST(VectorIntTest_Capacity, ShrinkToFit) {
     EXPECT_EQ(v.size(), 0);
 }
 
-// -------- VectorIntTest_OperatorsAndIterators --------
 
-TEST(VectorIntTest_Operators, Equality) {
-    VectorInt v1 = {1, 2, 3};
-    VectorInt v2 = {1, 2, 3};
-    VectorInt v3 = {1, 2, 4};
-    VectorInt v4 = {1, 2};
+TEST(VectorStringTest_Operators, Equality) {
+    VectorString v1 = {"a", "b", "c"};
+    VectorString v2 = {"a", "b", "c"};
+    VectorString v3 = {"a", "b", "d"};
+    VectorString v4 = {"a", "b"};
     
     EXPECT_TRUE(v1 == v2);
     EXPECT_FALSE(v1 != v2);
@@ -263,17 +255,17 @@ TEST(VectorIntTest_Operators, Equality) {
     EXPECT_TRUE(v1 != v4);
 }
 
-TEST(VectorIntTest_Iterators, BeginEnd) {
-    VectorInt v = {1, 2, 3};
-    int sum = 0;
-    for (int* it = v.begin(); it != v.end(); ++it) {
+TEST(VectorStringTest_Iterators, BeginEnd) {
+    VectorString v = {"a", "b", "c"};
+    std::string sum = "";
+    for (std::string* it = v.begin(); it != v.end(); ++it) {
         sum += *it;
     }
-    EXPECT_EQ(sum, 6);
+    EXPECT_EQ(sum, "abc");
     
-    sum = 0;
-    for (auto val : v) {
+    sum = "";
+    for (const auto& val : v) {
         sum += val;
     }
-    EXPECT_EQ(sum, 6);
+    EXPECT_EQ(sum, "abc");
 }
