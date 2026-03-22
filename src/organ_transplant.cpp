@@ -88,5 +88,18 @@ std::expected<PatientStatus, PatientError>OrganTransplantWaitingList::getPatient
     return std::unexpected(PatientError::NotFound);
 }
 
+OrganTransplantWaitingList::OrganTransplantWaitingList(OrganTransplantWaitingList&& other) noexcept {
+    std::lock_guard<std::mutex> lock(other.mtx);
+    waitingList = std::move(other.waitingList);
+    treatedList = std::move(other.treatedList);
+}
 
+OrganTransplantWaitingList& OrganTransplantWaitingList::operator=(OrganTransplantWaitingList&& other) noexcept {
+    if (this != &other) {
+        std::scoped_lock lock(mtx, other.mtx);
+        waitingList = std::move(other.waitingList);
+        treatedList = std::move(other.treatedList);
+    }
+    return *this;
+}
 }
