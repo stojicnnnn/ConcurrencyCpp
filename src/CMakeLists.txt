@@ -9,3 +9,6 @@ add_executable(assignment1_test organ_transplant_test.cpp)
 
 # Link the test executable to the library and gtest
 target_link_libraries(assignment1_test PRIVATE assignment1 gtest_main pthread)
+
+# Add vector subdirectory for its unit tests
+add_subdirectory(vector)
