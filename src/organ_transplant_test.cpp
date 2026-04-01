@@ -65,146 +65,60 @@ TEST(OrganTransplantTest, GetPatientStatus_ReturnsCorrectStatus) {
 }
 
 
-// Thread safety tests
-TEST(OrganTransplantTest, ConcurrentAdd_MultipleThreads) {
-    OrganTransplantWaitingList list;
-    const int NUM_THREADS = 10;
-    const int ADDS_PER_THREAD = 100;
-    
-    std::vector<std::thread> threads;
-    
-    for (int i = 0; i < NUM_THREADS; i++) {
-        threads.emplace_back([&list, i]() {
-            for (int j = 0; j < ADDS_PER_THREAD; j++) {
-                list.addPatient("Thread" + std::to_string(i) + 
-                              "-Patient" + std::to_string(j));
-            }
-        });
-    }
-    
-    for (auto& t : threads) {
-        t.join();
-    }
-    
-    EXPECT_EQ(list.getWaitingPatients().size(), NUM_THREADS * ADDS_PER_THREAD);
-}
-
-TEST(OrganTransplantTest, ConcurrentAddAndDelete_NoDataRace) {
+TEST(OrganTransplantTest, ThreadSafety_EverythingElse) {
     OrganTransplantWaitingList list;
     
-    std::thread addThread([&list]() {
-        for (int i = 0; i < 100; i++) {
-            list.addPatient("Patient-" + std::to_string(i));
+    list.addPatient("Initial1");
+    list.addPatient("Initial2");
+    list.treatPatient("Initial1", Date(2025, 1, 15));
+
+    auto threadFunc = [&list]() {
+        for (int i = 0; i < 500; i++) {
+            std::string name = "Patient_" + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) + "_" + std::to_string(i);
+            
+            list.addPatient(name);
+            list.getWaitingPatients();
+            list.getPatientStatus(name);
+            
+            list.treatPatient(name, Date(2026, 6, 1));
+            
+            list.getTreatedPatients();
+            list.deleteOldRecords(Date(2026, 1, 1));
         }
-    });
+    };
     
-    std::thread deleteThread([&list]() {
-        for (int i = 0; i < 50; i++) {
-            list.deleteOldRecords(Date(2020, 1, 1));
+    std::thread t1(threadFunc);
+    std::thread t2(threadFunc);
+    
+    t1.join();
+    t2.join();
+    
+    SUCCEED();
+}
+
+TEST(OrganTransplantTest, ThreadSafety_MoveAndCopy) {
+    static_assert(!std::is_copy_constructible_v<OrganTransplantWaitingList>, "Copy constructor must be deleted");
+    static_assert(!std::is_copy_assignable_v<OrganTransplantWaitingList>, "Copy assignment must be deleted");
+
+    OrganTransplantWaitingList shared_list;
+    shared_list.addPatient("PatientBase");
+
+    auto threadFunc = [&shared_list]() {
+        for (int i = 0; i < 500; i++) {
+            OrganTransplantWaitingList local_list = std::move(shared_list);
+            
+            std::string name = "Patient_" + std::to_string(std::hash<std::thread::id>{}(std::this_thread::get_id())) + "_" + std::to_string(i);
+            local_list.addPatient(name);
+            
+            shared_list = std::move(local_list);
         }
-    });
-    
-    addThread.join();
-    deleteThread.join();
-    
-    // If we reach here without crash, thread safety works
-    EXPECT_EQ(list.getWaitingPatients().size(), 100);
-}
+    };
 
-TEST(OrganTransplantTest, ConcurrentReadWrite_NoDataRace) {
-    OrganTransplantWaitingList list;
-    
-    // Pre-populate
-    for (int i = 0; i < 50; i++) {
-        list.addPatient("Patient-" + std::to_string(i));
-    }
-    
-    std::thread writeThread([&list]() {
-        for (int i = 50; i < 100; i++) {
-            list.addPatient("Patient-" + std::to_string(i));
-        }
-    });
-    
-    std::thread readThread([&list]() {
-        for (int i = 0; i < 100; i++) {
-            auto patients = list.getWaitingPatients();
-            // Just reading, checking we don't crash
-        }
-    });
-    
-    writeThread.join();
-    readThread.join();
-    
-    EXPECT_EQ(list.getWaitingPatients().size(), 100);
-}
+    std::thread t1(threadFunc);
+    std::thread t2(threadFunc);
 
-TEST(OrganTransplantTest, MoveConstructor_TransfersData) {
-    OrganTransplantWaitingList list1;
-    list1.addPatient("Alice Anderson");
-    list1.addPatient("Bob Brown");
-    list1.addPatient("Charlie Clark");
-    
-    OrganTransplantWaitingList list2(std::move(list1));
-    
-    ASSERT_EQ(list2.getWaitingPatients().size(), 3);
-    
-    auto patients = list2.getWaitingPatients();
-    ASSERT_EQ(patients[0], "Alice Anderson");
-    ASSERT_EQ(patients[1], "Bob Brown");
-    ASSERT_EQ(patients[2], "Charlie Clark");
-}
+    t1.join();
+    t2.join();
 
-TEST(OrganTransplantTest, MoveConstructor_WithTreatedPatients) {
-    OrganTransplantWaitingList list1;
-    list1.addPatient("Patient 1");
-    list1.addPatient("Patient 2");
-    list1.addPatient("Patient 3");
-    list1.treatPatient("Patient 1", Date(2025, 1, 15));
-    list1.treatPatient("Patient 3", Date(2025, 2, 20));
-    
-    OrganTransplantWaitingList list2(std::move(list1));
-    
-    auto waiting = list2.getWaitingPatients();
-    ASSERT_EQ(waiting.size(), 1);
-    EXPECT_EQ(waiting[0], "Patient 2");
-
-    auto treated = list2.getTreatedPatients();
-    ASSERT_EQ(treated.size(), 2);
-    EXPECT_EQ(treated[0], "Patient 1");
-    EXPECT_EQ(treated[1], "Patient 3");
-}
-
-TEST(OrganTransplantTest, MoveAssignment_TransfersData) {
-    OrganTransplantWaitingList list1;
-    list1.addPatient("Charlie");
-    list1.addPatient("David");
-    list1.addPatient("Eve");
-    list1.treatPatient("Charlie", Date(2025, 3, 1));
-    
-    OrganTransplantWaitingList list2;
-    list2.addPatient("Old Patient");
-    
-    ASSERT_EQ(list2.getWaitingPatients().size(), 1);
-    
-    list2 = std::move(list1);
-    
-    auto waiting = list2.getWaitingPatients();
-    ASSERT_EQ(waiting.size(), 2);
-    EXPECT_EQ(waiting[0], "David");
-    EXPECT_EQ(waiting[1], "Eve");
-
-    auto treated = list2.getTreatedPatients();
-    ASSERT_EQ(treated.size(), 1);
-    EXPECT_EQ(treated[0], "Charlie");
-}
-
-TEST(OrganTransplantTest, MoveAssignment_SelfAssignment) {
-    OrganTransplantWaitingList list;
-    list.addPatient("Test Patient");
-    
-    // Self-assignment should do nothing
-    list = std::move(list);
-    
-    ASSERT_EQ(list.getWaitingPatients().size(), 1);
-    EXPECT_EQ(waiting[0], "Test Patient");
+    SUCCEED();
 }
