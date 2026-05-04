@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cctype>
 
 void printHelp() {
     std::cout << "Available commands:" << std::endl;
@@ -17,9 +18,12 @@ void printHelp() {
 void printResults(const std::vector<Book>& results) {
     if (results.empty()) {
         std::cout << "No books found." << std::endl;
+    } else if (results.size() == 1) {
+        printBookDetails(results[0]);
     } else {
+        std::cout << "Found " << results.size() << " books:\n";
         for (const auto& book : results) {
-            printBook(book);
+            printBookSummary(book);
         }
     }
 }
@@ -30,51 +34,76 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     std::string filename = argv[1];
-    auto books = loadBooks(filename);
-    if (books.empty()) {
-        std::cerr << "No books loaded. Exiting." << std::endl;
+    std::vector<Book> books;
+    
+    try {
+        books = loadBooks(filename);
+    } catch (const ParseError& e) {
+        std::cerr << "Failed to load books: " << e.what() << std::endl;
         return 1;
+    }
+
+    if (books.empty()) {
+        std::cout << "Warning: Loaded 0 books from the file." << std::endl;
     }
 
     std::string command;
     while (true) {
         std::cout << "> ";
-        std::getline(std::cin, command);
-        if (command == "exit") {
+        if (!std::getline(std::cin, command)) break;
+
+        std::string cleaned_command;
+        bool in_space = false;
+        for (char c : command) {
+            if (std::isspace(c)) {
+                if (!in_space && !cleaned_command.empty()) {
+                    cleaned_command += ' ';
+                    in_space = true;
+                }
+            } else {
+                cleaned_command += c;
+                in_space = false;
+            }
+        }
+        if (!cleaned_command.empty() && cleaned_command.back() == ' ') {
+            cleaned_command.pop_back();
+        }
+
+        if (cleaned_command == "exit") {
             break;
-        } else if (command == "help") {
+        } else if (cleaned_command == "help") {
             printHelp();
-        } else if (command.substr(0, 13) == "search author ") {
-            std::string author = command.substr(13);
+        } else if (cleaned_command.find("search author ") == 0) {
+            std::string author = cleaned_command.substr(14);
             auto results = searchByAuthor(books, author);
             printResults(results);
-        } else if (command.substr(0, 12) == "search title ") {
-            std::string query = command.substr(12);
+        } else if (cleaned_command.find("search title ") == 0) {
+            std::string query = cleaned_command.substr(13);
             auto results = searchByTitle(books, query);
             printResults(results);
-        } else if (command.substr(0, 11) == "search isbn ") {
-            std::string isbn = command.substr(11);
+        } else if (cleaned_command.find("search isbn ") == 0) {
+            std::string isbn = cleaned_command.substr(12);
             auto results = searchByISBN(books, isbn);
             printResults(results);
-        } else if (command.substr(0, 12) == "rating above ") {
+        } else if (cleaned_command.find("rating above ") == 0) {
             try {
-                double rating = std::stod(command.substr(12));
+                double rating = std::stod(cleaned_command.substr(13));
                 auto results = booksWithRatingAbove(books, rating);
                 printResults(results);
             } catch (...) {
                 std::cout << "Invalid rating value." << std::endl;
             }
-        } else if (command.substr(0, 11) == "pages below ") {
+        } else if (cleaned_command.find("pages below ") == 0) {
             try {
-                int pages = std::stoi(command.substr(11));
+                int pages = std::stoi(cleaned_command.substr(12));
                 auto results = booksWithPagesBelow(books, pages);
                 printResults(results);
             } catch (...) {
                 std::cout << "Invalid pages value." << std::endl;
             }
-        } else {
+        } else if (!cleaned_command.empty()) {
             std::cout << "Unknown command. Type 'help' for available commands." << std::endl;
         }
     }
     return 0;
-}
+}
