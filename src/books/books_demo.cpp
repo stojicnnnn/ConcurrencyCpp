@@ -4,6 +4,8 @@
 #include <vector>
 #include <cctype>
 
+using namespace book_lib;
+
 void printHelp() {
     std::cout << "Available commands:" << std::endl;
     std::cout << "search author <author_name>" << std::endl;
@@ -44,7 +46,8 @@ int main(int argc, char* argv[]) {
     }
 
     if (books.empty()) {
-        std::cout << "Warning: Loaded 0 books from the file." << std::endl;
+        std::cerr << "Error: No books loaded from file." << std::endl;
+        return 1;
     }
 
     std::string command;
